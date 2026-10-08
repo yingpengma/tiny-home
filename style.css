@@ -31,7 +31,7 @@ html, body {
   position: fixed;
   top: 16px;
   left: 16px;
-  width: 230px;
+  width: 244px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -86,7 +86,8 @@ html, body {
 }
 #controls .row.hidden { display: none; }
 #controls button {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   border: none;
   border-radius: 8px;
   padding: 6px 4px;
@@ -125,20 +126,26 @@ html, body {
   min-width: 38px;
 }
 
-#bubble {
+.bubble {
   position: fixed;
   left: 0;
   top: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.bubble span {
+  display: block;
+  position: relative;
   padding: 4px 9px;
   font-size: 18px;
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  pointer-events: none;
   white-space: nowrap;
-  will-change: transform;
+  transform-origin: 50% 100%;
 }
-#bubble::after {
+.bubble.small span { font-size: 14px; padding: 3px 7px; }
+.bubble span::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -147,6 +154,19 @@ html, body {
   border: 6px solid transparent;
   border-bottom: 0;
   border-top-color: #fff;
+}
+.bubble span.pop { animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.cat-line {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+  display: flex;
+  gap: 8px;
 }
 
 #hint {
@@ -162,8 +182,28 @@ html, body {
   pointer-events: none;
 }
 
+#hud-toggle {
+  border: none;
+  background: rgba(0, 0, 0, 0.07);
+  border-radius: 6px;
+  width: 22px;
+  height: 18px;
+  line-height: 16px;
+  padding: 0;
+  font-size: 12px;
+  color: #7a6f63;
+  cursor: pointer;
+}
+.clock-top { align-items: center; gap: 8px; }
+.clock-top #period { margin-left: auto; }
+#hud.collapsed #needs, #hud.collapsed .cat-line, #hud.collapsed #controls { display: none; }
+#hud.collapsed #hud-toggle { transform: rotate(-90deg); }
+
 @media (max-width: 760px) {
   #log { display: none; }
-  #hud { width: 190px; top: 10px; left: 10px; }
-  #time { font-size: 30px; }
+  #hud { width: 200px; top: 10px; left: 10px; gap: 8px; }
+  .card { padding: 9px 11px; }
+  #time { font-size: 28px; }
+  #doing { margin-bottom: 4px; }
+  #hint { display: none; }
 }

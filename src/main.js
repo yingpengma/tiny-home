@@ -3,11 +3,26 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { buildHouse, HOUSE_W, HOUSE_D } from './house.js';
 import { Character } from './character.js';
 import { Agent } from './agent.js';
+import { Cat } from './cat.js';
+import { Robot } from './robot.js';
+import { Particles } from './particles.js';
 import { createLighting } from './lighting.js';
 import { createUI, formatTime } from './ui.js';
 
 // URL 参数（方便调试）：?time=21.5 指定开始时间并进入加速模式，?speed=8 指定加速档位
 const params = new URLSearchParams(location.search);
+
+// ?seed=123 固定随机数（方便复现问题）
+if (params.has('seed')) {
+  let a = Number(params.get('seed')) >>> 0;
+  Math.random = () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 // ---------- 渲染器 / 场景 / 相机 ----------
 const canvas = document.querySelector('#scene');
@@ -17,9 +32,9 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 
 const scene = new THREE.Scene();
-const center = new THREE.Vector3(HOUSE_W / 2, 0.6, HOUSE_D / 2);
-const camera = new THREE.PerspectiveCamera(32, 1, 0.5, 200);
-camera.position.set(center.x + 8.5, 12, center.z + 12.5);
+const center = new THREE.Vector3(HOUSE_W / 2, 0.5, HOUSE_D / 2 + 0.6);
+const camera = new THREE.PerspectiveCamera(32, 1, 0.5, 250);
+camera.position.set(center.x + 11, 17, center.z + 17);
 
 const controls = new OrbitControls(camera, canvas);
 controls.target.copy(center);
@@ -27,11 +42,12 @@ controls.enableDamping = true;
 controls.screenSpacePanning = false;
 controls.minPolarAngle = 0.25;
 controls.maxPolarAngle = 1.3;
-controls.minDistance = 5;
-controls.maxDistance = 38;
+controls.minDistance = 4;
+controls.maxDistance = 48;
 controls.update();
 
-const house = buildHouse();
+const particles = new Particles(scene);
+const house = buildHouse(particles);
 scene.add(house.group);
 const character = new Character();
 house.group.add(character.root);
@@ -48,9 +64,9 @@ const clock = {
   minutes: realMinutes(),
   get hour() { return (((this.minutes % 1440) + 1440) % 1440) / 60; },
   get day() { return Math.floor(this.minutes / 1440) + 1; },
+  get dow() { return (((midnight.getDay() + Math.floor(this.minutes / 1440)) % 7) + 7) % 7; },
 };
 
-const SPEEDS = [0, 1, 2, 8, 24]; // 每真实秒走多少游戏分钟
 let mode = 'real';
 let rate = 2;
 if (params.has('time')) {
@@ -62,11 +78,17 @@ if (params.has('speed')) {
   rate = Number(params.get('speed'));
 }
 
-const agent = new Agent({
-  character, house, clock,
-  onLog: (text) => ui.log(formatTime(clock.hour), text),
-});
+const onLog = (text) => ui.log(formatTime(clock.hour), text);
+const agent = new Agent({ character, house, clock, particles, onLog });
+const cat = new Cat({ house, clock, particles, onLog });
+const robot = new Robot({ house, clock, particles });
+house.group.add(cat.root, robot.root);
+agent.cat = cat;
+cat.human = agent;
+cat.robot = robot;
+robot.human = agent;
 agent.start();
+cat.start();
 
 // ---------- 控制按钮 ----------
 const modeButtons = document.querySelectorAll('[data-mode]');
@@ -87,9 +109,9 @@ function setMode(m) {
   if (m === mode) return;
   mode = m;
   if (mode === 'real') {
-    // 回到真实时间：时钟直接跳到现在，小人那边按"时间跳变"处理
     clock.minutes = realMinutes();
     agent.handleTimeJump();
+    cat.handleTimeJump();
     ui.log(formatTime(clock.hour), '🕐 回到真实时间');
   } else {
     if (rate === 0) rate = 2;
@@ -118,24 +140,41 @@ const wallBtn = document.querySelector('#btn-walls');
 wallBtn.addEventListener('click', () => {
   wallsHigh = !wallsHigh;
   house.setWallsHigh(wallsHigh);
-  wallBtn.textContent = wallsHigh ? '🧱 墙：高' : '🧱 墙：矮';
+  wallBtn.textContent = wallsHigh ? '🧱 高墙' : '🧱 矮墙';
 });
 
-let follow = false;
-const followBtn = document.querySelector('#btn-follow');
-followBtn.addEventListener('click', () => {
-  follow = !follow;
-  followBtn.classList.toggle('active', follow);
-});
+// 窄屏默认收起面板
+const hud = document.querySelector('#hud');
+if (window.innerWidth < 760) hud.classList.add('collapsed');
+document.querySelector('#hud-toggle').addEventListener('click', () => hud.classList.toggle('collapsed'));
+
+let follow = null;
+const followBtns = { human: document.querySelector('#btn-follow'), cat: document.querySelector('#btn-follow-cat') };
+for (const [who, btn] of Object.entries(followBtns)) {
+  btn.addEventListener('click', () => {
+    follow = follow === who ? null : who;
+    Object.entries(followBtns).forEach(([w, b]) => b.classList.toggle('active', follow === w));
+  });
+}
 
 refreshControls();
+ui.update({ clock, agent, cat, mode });
 
 // ---------- 主循环 ----------
+let fitted = false;
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  // 竖屏时把镜头拉远一些，让整个房子放得下
+  if (!fitted) {
+    fitted = true;
+    const k = Math.min(3, Math.max(1, 1.5 / camera.aspect));
+    camera.position.sub(controls.target).multiplyScalar(k).add(controls.target);
+    controls.update();
+  }
+  particles.setViewport(h, renderer.getPixelRatio(), camera.fov);
 }
 window.addEventListener('resize', resize);
 resize();
@@ -145,10 +184,8 @@ let last = performance.now();
 let lastDay = clock.day;
 let uiTimer = 0;
 
-function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000);
-  last = now;
-
+// 推进一步模拟（渲染循环和测试脚本共用）
+function step(dt) {
   let gameMin, simScale;
   if (mode === 'real') {
     const target = realMinutes();
@@ -158,23 +195,36 @@ function frame(now) {
   } else {
     gameMin = dt * rate;
     clock.minutes += gameMin;
-    simScale = rate === 0 ? 0 : Math.max(1, rate / 2); // 快进时走路也跟着变快
+    simScale = rate === 0 ? 0 : Math.max(1, rate); // 快进时走路、动作也跟着变快（×60 时是正常速度）
   }
   const simDt = dt * simScale;
 
-  agent.update(simDt, gameMin);
-  character.update(simDt, agent.status.walking);
+  const loco = agent.update(simDt, gameMin);
+  cat.update(simDt, gameMin);
+  robot.update(simDt, gameMin);
+  character.update(simDt, loco);
+  particles.update(simDt);
 
   const { sky, dark } = lighting.update(clock.hour);
-  house.update(dt, clock.hour, { lightsOn: dark && !agent.asleep, sky });
+  house.update(simDt, gameMin, clock.hour, {
+    lightsOn: dark && !agent.asleep && !agent.away, sky, minutes: clock.minutes,
+    movers: [character.root.position, cat.root.position],
+  });
 
   if (clock.day !== lastDay) {
     lastDay = clock.day;
     ui.log('', `—— 第 ${clock.day} 天 ——`);
   }
+  return { gameMin, simDt };
+}
+
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  step(dt);
 
   if (follow) {
-    character.root.getWorldPosition(followPos);
+    (follow === 'cat' ? cat.root : character.root).getWorldPosition(followPos);
     followPos.y = center.y;
     const delta = followPos.sub(controls.target).multiplyScalar(1 - Math.exp(-3 * dt));
     controls.target.add(delta);
@@ -185,13 +235,13 @@ function frame(now) {
   uiTimer -= dt;
   if (uiTimer <= 0) {
     uiTimer = 0.1;
-    ui.update({ clock, agent, mode });
+    ui.update({ clock, agent, cat, mode });
   }
-  ui.updateBubble(character, agent, camera, canvas);
+  ui.updateBubbles({ character, agent, cat, camera, canvas });
 
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
-window.__home = { agent, clock, house, character, camera, controls, renderer, setMode, setSpeed };
+window.__home = { agent, cat, robot, clock, house, character, camera, controls, renderer, scene, particles, setMode, setSpeed, step, ui };

@@ -27,10 +27,10 @@ export function createLighting(scene, center) {
   const sun = new THREE.DirectionalLight('#fff4e0', 2);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = sun.shadow.camera.bottom = -12;
-  sun.shadow.camera.right = sun.shadow.camera.top = 12;
+  sun.shadow.camera.left = sun.shadow.camera.bottom = -15;
+  sun.shadow.camera.right = sun.shadow.camera.top = 15;
   sun.shadow.camera.near = 1;
-  sun.shadow.camera.far = 60;
+  sun.shadow.camera.far = 70;
   sun.shadow.bias = -0.0005;
   sun.shadow.normalBias = 0.02;
   sun.target.position.copy(center);
@@ -49,7 +49,7 @@ export function createLighting(scene, center) {
     const sunI = num(SUN, hour);
     const a = Math.PI * ((hour - 6) / 12);              // 6 点日出，18 点日落
     const elev = Math.max(0.15, Math.sin(a));
-    sun.position.set(center.x - 14 * Math.cos(a), center.y + 18 * elev, center.z + 10);
+    sun.position.set(center.x - 16 * Math.cos(a), center.y + 20 * elev, center.z + 12);
     sun.intensity = sunI;
     sun.color.lerpColors(warm, white, Math.min(1, Math.sin(Math.max(0, a)) * 2));
 

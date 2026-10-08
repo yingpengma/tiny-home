@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>小屋日常 · Tiny Home</title>
-  <meta name="description" content="一个住在 3D 小屋里的小人，按自己的需求过日子：吃饭、喝水、上厕所、看电视、睡觉。" />
+  <meta name="description" content="一个住在 3D 大平层里的小人和一只橘猫，按自己的需求过日子：做饭、洗澡、上班、撸猫、晾衣服、睡觉。" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>" />
   <link rel="stylesheet" href="./style.css" />
   <script type="importmap">
@@ -19,11 +19,12 @@
 <body>
   <canvas id="scene"></canvas>
 
-  <div id="bubble"></div>
+  <div id="bubble" class="bubble"><span></span></div>
+  <div id="cat-bubble" class="bubble small"><span></span></div>
 
   <aside id="hud">
     <section class="card" id="clock-card">
-      <div class="clock-top"><span id="day">第 1 天</span><span id="period"></span></div>
+      <div class="clock-top"><span id="day">第 1 天</span><span id="period"></span><button id="hud-toggle" title="展开/收起">▾</button></div>
       <div id="time">--:--</div>
       <div id="mode-badge"></div>
     </section>
@@ -32,6 +33,7 @@
       <div class="who">🧒 小豆</div>
       <div id="doing">…</div>
       <div id="needs"></div>
+      <div class="cat-line"><b>🐱 橘子</b><span id="cat-doing">…</span></div>
     </section>
 
     <section class="card" id="controls">
@@ -48,8 +50,9 @@
       </div>
       <div id="speed-hint"></div>
       <div class="row">
-        <button id="btn-walls">🧱 墙：矮</button>
-        <button id="btn-follow">🎥 跟随小豆</button>
+        <button id="btn-walls">🧱 矮墙</button>
+        <button id="btn-follow">📍 跟小豆</button>
+        <button id="btn-follow-cat">📍 跟橘子</button>
       </div>
     </section>
   </aside>
