@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>小屋日常 · Tiny Home</title>
+  <meta name="description" content="一个住在 3D 小屋里的小人，按自己的需求过日子：吃饭、喝水、上厕所、看电视、睡觉。" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>" />
+  <link rel="stylesheet" href="./style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.js",
+        "three/addons/": "./vendor/addons/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <div id="bubble"></div>
+
+  <aside id="hud">
+    <section class="card" id="clock-card">
+      <div class="clock-top"><span id="day">第 1 天</span><span id="period"></span></div>
+      <div id="time">--:--</div>
+      <div id="mode-badge"></div>
+    </section>
+
+    <section class="card" id="status-card">
+      <div class="who">🧒 小豆</div>
+      <div id="doing">…</div>
+      <div id="needs"></div>
+    </section>
+
+    <section class="card" id="controls">
+      <div class="row">
+        <button data-mode="real">🕐 真实时间</button>
+        <button data-mode="fast">⏩ 加速</button>
+      </div>
+      <div class="row" id="speed-row">
+        <button data-speed="0" title="暂停（空格）">⏸</button>
+        <button data-speed="1">×60</button>
+        <button data-speed="2">×120</button>
+        <button data-speed="8">×480</button>
+        <button data-speed="24">×1440</button>
+      </div>
+      <div id="speed-hint"></div>
+      <div class="row">
+        <button id="btn-walls">🧱 墙：矮</button>
+        <button id="btn-follow">🎥 跟随小豆</button>
+      </div>
+    </section>
+  </aside>
+
+  <section class="card" id="log">
+    <h2>📓 小豆的日记</h2>
+    <ul id="log-list"></ul>
+  </section>
+
+  <div id="hint">拖动旋转 · 右键 / 双指平移 · 滚轮缩放</div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
