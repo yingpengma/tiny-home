@@ -38,6 +38,25 @@ export class Grid {
     this.markRect(x0 - this.radius, z0 - this.radius, x1 + this.radius, z1 + this.radius, true);
   }
 
+  // 只保留和 from 连通的空格，其它孤立的小空地标成不可走
+  keepConnected(from) {
+    const seen = new Uint8Array(this.cols * this.rows);
+    const [sc, sr] = this.nearestFree(...this.toCell(from[0], from[1]));
+    const stack = [[sc, sr]];
+    seen[this.idx(sc, sr)] = 1;
+    while (stack.length) {
+      const [c, r] = stack.pop();
+      for (const [dc, dr] of DIRS) {
+        const nc = c + dc, nr = r + dr;
+        if (!this.isFree(nc, nr) || seen[this.idx(nc, nr)]) continue;
+        if (dc && dr && (!this.isFree(c + dc, r) || !this.isFree(c, r + dr))) continue;
+        seen[this.idx(nc, nr)] = 1;
+        stack.push([nc, nr]);
+      }
+    }
+    for (let i = 0; i < seen.length; i++) if (!seen[i]) this.blocked[i] = 1;
+  }
+
   // 直接标记区域（屋外、阳台以外等），不参与拉直检测
   markRect(x0, z0, x1, z1, value = true) {
     const c0 = Math.max(0, Math.floor(x0 / this.cell)), c1 = Math.min(this.cols - 1, Math.floor(x1 / this.cell));

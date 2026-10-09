@@ -140,14 +140,6 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-let wallsHigh = false;
-const wallBtn = document.querySelector('#btn-walls');
-wallBtn.addEventListener('click', () => {
-  wallsHigh = !wallsHigh;
-  house.setWallsHigh(wallsHigh);
-  wallBtn.textContent = wallsHigh ? '🧱 高墙' : '🧱 矮墙';
-});
-
 // 窄屏默认收起面板
 const hud = document.querySelector('#hud');
 if (window.innerWidth < 760) hud.classList.add('collapsed');

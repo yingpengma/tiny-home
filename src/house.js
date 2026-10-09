@@ -14,7 +14,7 @@ export const HOUSE_W = 16;
 export const HOUSE_D = 12;
 export const GRID_D = 14.5;
 const T = 0.15;
-const OUTER_H = 2.6, FRONT_H = 0.45, INNER_LOW = 0.9, INNER_HIGH = 2.6;
+const OUTER_H = 2.6, FRONT_H = 0.45, INNER_LOW = 0.9;
 const PI = Math.PI;
 const R2 = PI / 2;
 const WALK_BLOCK_H = 1.25; // 低于这个高度的东西会挡路
@@ -142,7 +142,6 @@ export function buildHouse(particles) {
   // 墙：同一类的墙合成一个网格（墙顶用深色顶点色），高度靠 scale.y 控制
   const sideColor = new THREE.Color('#f4ecdc'), topColor = new THREE.Color('#6f6355');
   const wallGeos = { outer: [], front: [], inner: [] };
-  const walls = [];
   function wall(x0, z0, x1, z1, kind) {
     const geo = new THREE.BoxGeometry(x1 - x0, 1, z1 - z0).toNonIndexed();
     geo.translate((x0 + x1) / 2, 0.5, (z0 + z1) / 2);
@@ -163,7 +162,6 @@ export function buildHouse(particles) {
       mesh.scale.y = kind === 'outer' ? OUTER_H : kind === 'front' ? FRONT_H : INNER_LOW;
       mesh.castShadow = mesh.receiveShadow = true;
       group.add(mesh);
-      walls.push({ mesh, kind });
     }
   }
   wall(-T, -T, HOUSE_W + T, 0, 'outer');
@@ -340,30 +338,30 @@ export function buildHouse(particles) {
   box(3.95, 2.4, 4.8, 2.55, 0.44, 0.64, '#7d9c79', { tag: 'readChair' });
   box(3.95, 3.1, 4.8, 3.25, 0.44, 0.64, '#7d9c79', { tag: 'readChair' });
   box(3.97, 2.57, 4.58, 3.08, 0.44, 0.5, '#a3c19f');
-  cyl(4.6, 3.55, 0, 0.04, 0.15, '#3a3a3a', { tag: 'lampB' });
-  cyl(4.6, 3.55, 0.04, 1.5, 0.02, '#3a3a3a');
-  cyl(4.6, 3.55, 1.45, 1.75, 0.2, null, { rTop: 0.1, material: lamp(4.5, 1.45, 3.4), cast: false });
+  cyl(3.72, 3.55, 0, 0.04, 0.15, '#3a3a3a', { tag: 'lampB' });            // 落地灯放椅子西南侧，不挡镜头
+  cyl(3.72, 3.55, 0.04, 1.5, 0.02, '#3a3a3a');
+  cyl(3.72, 3.55, 1.45, 1.75, 0.2, null, { rTop: 0.1, material: lamp(3.72, 1.45, 3.55), cast: false });
 
-  // 衣柜（推拉门）
+  // 衣柜（推拉门）。柜门开在工作区那一侧：镜头从 +x +z 看过来，小豆换衣服时站在柜子前面而不是被柜子挡住
   box(0.15, 3.85, 2.3, 4.45, 0, 2.1, '#c99e72', { tag: 'wardrobe' });
-  box(0.17, 3.83, 2.28, 3.85, 0.05, 2.05, '#3a2c22', { cast: false });
+  box(0.17, 4.45, 2.28, 4.47, 0.05, 2.05, '#3a2c22', { cast: false });      // 柜内背板
   ['#f2a65a', '#4f81bd', '#e8e8e8', '#9bbb59', '#c0504d', '#3d5a80', '#f2c14e', '#8064a2'].forEach((c, i) =>
-    box(0.3 + i * 0.24, 3.86, 0.48 + i * 0.24, 3.9, 0.95, 1.85, c, { cast: false }));
-  box(0.17, 3.86, 2.28, 3.9, 1.88, 1.9, '#9a9a9a', { cast: false });
-  box(0.15, 3.78, 1.2, 3.82, 0.03, 2.07, '#d7b48a');                        // 左扇（固定）
-  const wardrobeDoor = dyn(1.2, 0, 3.77);
+    box(0.3 + i * 0.24, 4.47, 0.48 + i * 0.24, 4.51, 0.95, 1.85, c, { cast: false }));
+  box(0.17, 4.47, 2.28, 4.51, 1.88, 1.9, '#9a9a9a', { cast: false });       // 挂衣杆
+  box(0.15, 4.52, 1.2, 4.56, 0.03, 2.07, '#d7b48a');                        // 左扇（固定）
+  const wardrobeDoor = dyn(1.2, 0, 4.54);
   box(0, -0.02, 1.1, 0.02, 0.03, 2.07, '#d7b48a', { parent: wardrobeDoor });
-  box(0.05, -0.04, 0.09, -0.02, 0.9, 1.3, '#8a6b4a', { parent: wardrobeDoor });
+  box(0.05, 0.02, 0.09, 0.04, 0.9, 1.3, '#8a6b4a', { parent: wardrobeDoor });
   let wardrobeCur = 0;
   fxState.wardrobe = false;
   fx.wardrobe = (on) => { fxState.wardrobe = on; };
 
   box(1.0, 2.5, 3.2, 3.45, 0, 0.012, '#e3a6a8', { cast: false });          // 床边地毯
-  box(4.82, 1.25, 4.9, 1.85, 0.02, 1.75, '#d9c3a0', { tag: 'bedMirror' });  // 全身镜
-  box(4.815, 1.3, 4.82, 1.8, 0.07, 1.7, '#cfe6ee', { cast: false });
-  box(4.72, 1.3, 4.9, 1.36, 0, 0.03, '#b89a70', { tag: 'bedMirror' });
-  box(4.72, 1.74, 4.9, 1.8, 0, 0.03, '#b89a70', { tag: 'bedMirror' });
-  plant('bedroom', 2.55, 4.12, 0.8);
+  box(0.4, 3.8, 1.0, 3.85, 0.02, 1.75, '#d9c3a0', { tag: 'bedMirror' });   // 全身镜，靠在衣柜背面
+  box(0.45, 3.795, 0.95, 3.8, 0.07, 1.7, '#cfe6ee', { cast: false });
+  box(0.4, 3.76, 0.46, 3.85, 0, 0.03, '#b89a70', { tag: 'bedMirror' });
+  box(0.94, 3.76, 1.0, 3.85, 0, 0.03, '#b89a70', { tag: 'bedMirror' });
+  plant('bedroom', 4.75, 2.15, 0.6);                                        // 梳妆台和阅读椅之间的角落
 
   // =====================================================================
   // 工作区 x 0..3.5, z 4.5..7.3
@@ -811,10 +809,10 @@ export function buildHouse(particles) {
   cyl(15.75, 8.85, 0, 0.45, 0.12, '#5a6b7a', { tag: 'umbrella' });
   cyl(15.72, 8.82, 0.45, 0.85, 0.015, '#c0504d');
   cyl(15.78, 8.88, 0.45, 0.8, 0.015, '#3d5a80');
-  // 穿衣镜
-  box(13.55, 11.82, 14.1, 11.95, 0.03, 1.75, '#d9c3a0', { tag: 'mirror' });
-  box(13.6, 11.815, 14.05, 11.82, 0.08, 1.7, '#cfe6ee', { cast: false });
-  box(13.5, 11.75, 14.15, 11.97, 0, 0.03, '#b89a70', { tag: 'mirror' });
+  // 穿衣镜（立式，靠健身角一侧，镜面朝 +x：照镜子时背对镜头，不会被镜子挡住）
+  box(12.6, 10.3, 12.73, 10.85, 0.03, 1.75, '#d9c3a0', { tag: 'mirror' });
+  box(12.73, 10.35, 12.735, 10.8, 0.08, 1.7, '#cfe6ee', { cast: false });
+  box(12.58, 10.25, 12.8, 10.9, 0, 0.03, '#b89a70', { tag: 'mirror' });
   plant('entrance', 14.0, 8.9, 0.85);
   box(15.3, 11.72, 15.46, 11.95, 0, 1.05, '#7a8b99', { tag: 'vacuum' });    // 吸尘器
   box(15.28, 11.6, 15.48, 11.95, 0, 0.07, '#4a5560', { tag: 'vacuum' });
@@ -900,7 +898,7 @@ export function buildHouse(particles) {
   const seat = (top) => top + SIT_DROP;
 
   spot('bed', 'lie', [2.05, 0.56 + LIE_LIFT, 1.77], 0, { approach: [3.25, 1.4], edge: [2.78, seat(0.56), 1.4, R2], tags: ['nightR'] });
-  spot('wardrobe', 'stand', [1.75, 0, 3.45], 0, { tags: ['wardrobe'] });
+  spot('wardrobe', 'stand', [1.75, 0, 4.9], PI, { tags: ['wardrobe'] });
   spot('curtain', 'stand', [0.5, 0, 1.9], -R2);
   spot('dresser', 'sitBack', [4.35, seat(0.44), 0.98], PI, { tags: ['stool', 'dresser'] });
   spot('readChair', 'sit', [4.2, seat(0.5), 2.825], -R2);
@@ -935,7 +933,7 @@ export function buildHouse(particles) {
   spot('trash', 'stand', [15.08, 0, 2.9], R2, { approach: [15.05, 3.55] });
   spot('bench', 'sit', [14.7, seat(0.44), 11.68], PI);
   spot('coatRack', 'stand', [15.05, 0, 8.25], R2);
-  spot('mirror', 'stand', [13.82, 0, 11.25], 0);
+  spot('mirror', 'stand', [13.1, 0, 10.58], -R2);
   spot('door', 'stand', [15.45, 0, 9.5], R2, { approach: [14.7, 9.5], outside: [19.8, 9.5], tags: [] });
   spot('catTree', 'stand', [8.75, 0, 11.55], R2);
   spot('playArea', 'stand', [7.8, 0, 9.0], 0);
@@ -945,7 +943,7 @@ export function buildHouse(particles) {
   spot('dryRack', 'stand', [9.7, 0, 13.85], PI, { approach: [9.7, 13.85] });
   spot('balChair', 'sit', [6.4, seat(0.48), 12.95], 0);
   spot('lookout', 'stand', [8.0, 0, 13.92], 0, { approach: [8.0, 13.6], tags: ['railing'] });
-  spot('plant:bedroom', 'stand', [3.05, 0, 4.0], -R2);
+  spot('plant:bedroom', 'stand', [4.3, 0, 1.9], R2, { tags: ['readChair', 'stool'] });
   spot('plant:living', 'stand', [1.05, 0, 7.62], -R2);
   spot('plant:big', 'stand', [5.65, 0, 11.4], -R2);
   spot('plant:entrance', 'stand', [13.45, 0, 8.9], R2);
@@ -961,13 +959,13 @@ export function buildHouse(particles) {
     sofaSide: { pos: [3.7, 0.5, 8.78], approach: [3.05, 8.6], rot: -R2, pose: 'loaf', jump: true, tags: ['sofa'] },
     sofaNap: { pos: [3.0, 0.5, 11.15], approach: [3.0, 10.45], pose: 'curl', jump: true, tags: ['sofa'] },
     bedFoot: { pos: [2.05, 0.6, 2.05], approach: [2.05, 2.75], pose: 'curl', jump: true, tags: ['bed'] },
-    bedDay: { pos: [1.6, 0.58, 1.3], approach: [3.3, 1.5], pose: 'curl', jump: true, tags: ['bed'] },
+    bedDay: { pos: [1.6, 0.58, 1.3], approach: [2.6, 2.85], pose: 'curl', jump: true, tags: ['bed'] },  // 从床尾跳上去；床东侧的角落猫的宽余量网格进不去
     readChair: { pos: [4.15, 0.5, 2.82], approach: [3.6, 2.82], pose: 'curl', jump: true, tags: ['readChair'] },
     food: { pos: [11.12, 0, 3.42], approach: [11.12, 3.8], rot: PI, pose: 'eat', tags: ['bowls'] },
     water: { pos: [11.42, 0, 3.42], approach: [11.42, 3.8], rot: PI, pose: 'eat', tags: ['bowls'] },
     litter: { pos: [9.45, 0.1, 2.2], approach: [9.45, 2.85], rot: 0, pose: 'sit', jump: true, tags: ['litter', 'litterWall'] },
     sunny: { pos: [8.0, 0, 13.4], approach: [8.0, 12.9], pose: 'loaf' },
-    window: { pos: [0.55, 0, 2.8], approach: [0.98, 2.8], rot: -R2, pose: 'sit' },
+    window: { pos: [7.4, 0, 11.55], approach: [7.4, 11.3], rot: 0, pose: 'sit' },           // 坐在阳台门口看外面
     door: { pos: [14.75, 0, 9.35], approach: [14.45, 9.35], rot: R2, pose: 'sit', tags: [] },
     scratch: { pos: [9.22, 0, 11.6], approach: [8.72, 11.6], rot: R2, pose: 'scratch', tags: ['catTree'] },
   };
@@ -1153,9 +1151,6 @@ export function buildHouse(particles) {
     minuteHand.rotation.x = -(hour % 1) * PI * 2;
   }
 
-  function setWallsHigh(high) {
-    for (const w of walls) if (w.kind === 'inner') w.mesh.scale.y = high ? INNER_HIGH : INNER_LOW;
-  }
   function setFx(name, on) { fx[name]?.(on); }
   function setChair(name, k) { fxState[name] = k; }
 
@@ -1170,7 +1165,8 @@ export function buildHouse(particles) {
 
   // 猫的头比身体中心往前伸得多，用余量更大的网格寻路
   const catGrid = grid.withRadius(0.42);
-  return { group, grid, catGrid, spots, catSpots, state, colliders, plants, update, setWallsHigh, setFx, setChair };
+  catGrid.keepConnected([8, 6.5]); // 外扩后被家具隔开的小角落猫进得去出不来，直接标成不可走
+  return { group, grid, catGrid, spots, catSpots, state, colliders, plants, update, setFx, setChair };
 }
 
 function colorize(geo, color) {

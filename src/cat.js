@@ -370,12 +370,13 @@ export class Cat {
       sofa: humanSofa && n.affection < 85 ? 2.5 : 0,
       zoomies: n.energy > 70 && (inRange(h, 5, 7) || inRange(h, 20, 23)) ? 0.6 : 0,
       waitDoor: human?.away && human.step?.elapsed > 15 ? 2.5 : 0,
-      robot: robot?.active && n.energy > 30 ? 1.6 : 0,
+      robot: robot?.active && n.energy > 30 && this.clock.minutes - (this.lastRobotChase ?? -Infinity) > 180 ? 1.6 : 0, // 追过一次要隔三小时才再追
       bedNight: humanAsleep && night ? 3 : 0,
     };
     const list = Object.entries(opts).filter(([, s]) => s > 0).map(([id, s]) => ({ id, w: (id === this.lastId ? 0.3 : 1) * s * s * (0.7 + Math.random() * 0.6) }));
     let r = Math.random() * list.reduce((a, o) => a + o.w, 0);
     const chosen = list.find((o) => (r -= o.w) <= 0) ?? list[list.length - 1];
+    if (chosen.id === 'robot') this.lastRobotChase = this.clock.minutes;
     this.startPlan(chosen.id);
   }
 
