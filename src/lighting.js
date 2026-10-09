@@ -24,15 +24,8 @@ export function createLighting(scene, center) {
   const hemi = new THREE.HemisphereLight('#ffffff', '#b5a58a', 1);
   scene.add(hemi);
 
+  // 太阳只负责给屋里东西一点明暗面和天色，不投影（屋里本来就没有太阳的硬影子）
   const sun = new THREE.DirectionalLight('#fff4e0', 2);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = sun.shadow.camera.bottom = -15;
-  sun.shadow.camera.right = sun.shadow.camera.top = 15;
-  sun.shadow.camera.near = 1;
-  sun.shadow.camera.far = 70;
-  sun.shadow.bias = -0.0005;
-  sun.shadow.normalBias = 0.02;
   sun.target.position.copy(center);
   scene.add(sun, sun.target);
 
@@ -40,9 +33,14 @@ export function createLighting(scene, center) {
   const nightSky = new THREE.Color('#7f8fd0'), daySky = new THREE.Color('#ffffff');
   const nightGround = new THREE.Color('#2a2a3a'), dayGround = new THREE.Color('#b5a58a');
   const warm = new THREE.Color('#ffb070'), white = new THREE.Color('#fff4e0');
+  const lampSky = new THREE.Color('#ffd9a8'), lampGround = new THREE.Color('#6a5a48');
   scene.background = sky;
 
-  function update(hour) {
+  // 屋里开灯后的整体暖光（代替一盏盏真实点光源），平滑开关
+  let lampLevel = 0;
+  const isDark = (hour) => num(SUN, hour) < 0.9;
+
+  function update(hour, lightsOn = false, dt = 0) {
     const [c0, c1, t] = sample(SKY, hour);
     sky.lerpColors(c0, c1, t);
 
@@ -55,12 +53,15 @@ export function createLighting(scene, center) {
 
     const hemiI = num(HEMI, hour);
     const day = Math.min(1, Math.max(0, (hemiI - 0.45) / 0.8));
-    hemi.intensity = hemiI;
     hemi.color.lerpColors(nightSky, daySky, day);
     hemi.groundColor.lerpColors(nightGround, dayGround, day);
+    lampLevel += ((lightsOn ? 1 : 0) - lampLevel) * Math.min(1, dt * 4);
+    hemi.intensity = hemiI + 1.1 * lampLevel;
+    hemi.color.lerp(lampSky, lampLevel);
+    hemi.groundColor.lerp(lampGround, lampLevel);
 
     return { sky, dark: sunI < 0.9 };
   }
 
-  return { update };
+  return { update, isDark };
 }

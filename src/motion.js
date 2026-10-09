@@ -22,6 +22,7 @@ export class Mover {
     this.path = null;
     this.segs = null;
     this.loco = { speed: 0, dist: 0, look: 0, stepping: false };
+    this.groundY = obj.position.y; // 脚下的落点高度（起跳时不跟着弧线抬高），给接触阴影用
   }
 
   get busy() { return !!(this.path || this.segs); }
@@ -90,6 +91,7 @@ export class Mover {
       const nx = f.x + (g.x - f.x) * k, nz = f.z + (g.z - f.z) * k;
       const moved = Math.hypot(nx - p.x, nz - p.z);
       let ny = f.y + (g.y - f.y) * k;
+      this.groundY = ny;
       if (seg.arc) ny += Math.sin(Math.PI * k) * seg.arc;
       p.set(nx, ny, nz);
       this.obj.rotation.y = angleLerp(f.rot, g.rot, k);
@@ -140,6 +142,7 @@ export class Mover {
         }
       }
       p.y = 0;
+      this.groundY = 0;
       const turn = wrapAngle(heading - this.obj.rotation.y);
       const maxTurn = this.turnSpeed * dt;
       this.obj.rotation.y += Math.max(-maxTurn, Math.min(maxTurn, turn));
@@ -153,6 +156,7 @@ export class Mover {
     }
 
     loco.speed = 0;
+    this.groundY = p.y;
     return loco;
   }
 }

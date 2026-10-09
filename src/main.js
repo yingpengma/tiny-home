@@ -8,6 +8,7 @@ import { Robot } from './robot.js';
 import { Particles } from './particles.js';
 import { createLighting } from './lighting.js';
 import { createUI, formatTime } from './ui.js';
+import { ContactShadows } from './contact.js';
 
 // URL 参数（方便调试）：?time=21.5 指定开始时间并进入加速模式，?speed=8 指定加速档位
 const params = new URLSearchParams(location.search);
@@ -27,9 +28,8 @@ if (params.has('seed')) {
 // ---------- 渲染器 / 场景 / 相机 ----------
 const canvas = document.querySelector('#scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.setPixelRatio(1);
+// 屋子有屋顶（只是为了看进去才不画），所以屋里没有太阳投下的硬影子，不开阴影贴图
 
 const scene = new THREE.Scene();
 const center = new THREE.Vector3(HOUSE_W / 2, 0.5, HOUSE_D / 2 + 0.6);
@@ -83,6 +83,11 @@ const agent = new Agent({ character, house, clock, particles, onLog });
 const cat = new Cat({ house, clock, particles, onLog });
 const robot = new Robot({ house, clock, particles });
 house.group.add(cat.root, robot.root);
+// 脚下一片淡淡的接触阴影，让人、猫、机器人不像飘在地上
+const contact = new ContactShadows(house.group);
+contact.add(character.root, agent.mover, 0.32, 0.3);
+contact.add(cat.root, cat.mover, 0.22, 0.28);
+contact.add(robot.root, robot.mover, 0.19, 0.22);
 agent.cat = cat;
 cat.human = agent;
 cat.robot = robot;
@@ -204,10 +209,12 @@ function step(dt) {
   robot.update(simDt, gameMin);
   character.update(simDt, loco);
   particles.update(simDt);
+  contact.update();
 
-  const { sky, dark } = lighting.update(clock.hour);
+  const lightsOn = lighting.isDark(clock.hour) && !agent.asleep && !agent.away;
+  const { sky } = lighting.update(clock.hour, lightsOn, dt);
   house.update(simDt, gameMin, clock.hour, {
-    lightsOn: dark && !agent.asleep && !agent.away, sky, minutes: clock.minutes,
+    lightsOn, sky, minutes: clock.minutes,
     movers: [character.root.position, cat.root.position],
   });
 

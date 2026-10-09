@@ -53,6 +53,7 @@ python3 -m http.server 8000
 | `src/motion.js` | 走路（加减速、转身）和分段过渡 |
 | `src/grid.js` | 0.25m 网格 + A* 寻路 |
 | `src/particles.js` | 热气、水滴、泡泡、音符、Zzz、爱心等粒子 |
+| `src/contact.js` | 人、猫、机器人脚下的接触阴影（屋里没有太阳硬影子，靠它让东西不飘） |
 | `src/bake.js` | 把一起运动的零件合成一个网格，减少 draw call |
 | `src/lighting.js` | 昼夜光照 |
 | `src/ui.js` / `src/main.js` | 界面、时钟、主循环 |

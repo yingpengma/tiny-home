@@ -236,12 +236,11 @@ export function buildHouse(particles) {
 
   // ---------- 灯 ----------
   const lamps = [];
-  function lamp(x, y, z, { color = '#ffcf8a', intensity = 5, distance = 6 } = {}) {
-    const light = new THREE.PointLight(color, 0, distance, 1.6);
-    light.position.set(x, y, z);
-    group.add(light);
+  // 灯不放真实点光源（每个像素都要为每盏灯算一遍，不划算），只让灯罩自己发亮；
+  // 晚上屋里的亮度由 lighting.js 的整体环境光补上
+  function lamp(x, y, z, { color = '#ffcf8a' } = {}) {
     const material = new THREE.MeshLambertMaterial({ color: '#fff3d6', emissive: new THREE.Color(color), emissiveIntensity: 0 });
-    lamps.push({ light, material, intensity, level: 0 });
+    lamps.push({ material, level: 0 });
     return material;
   }
   function tableLamp(x, z, y, newLight = true) {
@@ -1020,9 +1019,6 @@ export function buildHouse(particles) {
   for (const k of ['tv', 'tvGame', 'monitor', 'stove', 'coffee', 'treadmill', 'eating', 'pillow']) fxState[k] = false;
 
   const recordNotes = [particles.emitter('note', [0.35, 0.95, 8.37], 0.6), particles.emitter('note2', [0.35, 0.95, 10.63], 0.5)];
-  const tvLight = new THREE.PointLight('#8fb8ff', 0, 6, 1.6);
-  tvLight.position.set(1.0, 1.3, 9.5);
-  group.add(tvLight);
 
   // ---------- 每帧 ----------
   let t = 0, tvTimer = 0;
@@ -1051,7 +1047,6 @@ export function buildHouse(particles) {
 
     for (const l of lamps) {
       l.level = sm(l.level, lightsOn ? 1 : 0, dt, 4);
-      l.light.intensity = l.intensity * l.level;
       l.material.emissiveIntensity = 0.9 * l.level;
     }
     alarmMat.color.set(lightsOn || hour < 7 ? '#ff6a4d' : '#7a3a30');
@@ -1109,11 +1104,8 @@ export function buildHouse(particles) {
         tvColor.setHSL(fxState.tvGame ? 0.5 + Math.random() * 0.4 : Math.random(), fxState.tvGame ? 0.8 : 0.55, 0.45 + Math.random() * 0.15);
       }
       tvMat.color.copy(tvColor);
-      tvLight.color.copy(tvColor);
-      tvLight.intensity = 2.5;
     } else {
       tvMat.color.set('#151515');
-      tvLight.intensity = 0;
     }
     consoleMat.color.set(fxState.tvGame ? '#4aa3ff' : '#333333');
     monitorMat.color.set(fxState.monitor ? (Math.sin(t * 2) > 0.95 ? '#7aa8e8' : '#5b8fd6') : '#151515');
